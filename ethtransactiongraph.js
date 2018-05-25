@@ -1,4 +1,4 @@
-var web3 = new Web3(Web3.givenProvider || 'wss://mainnet.infura.io/_ws');
+var web3 = new Web3('wss://mainnet.infura.io/_ws');
 
 var subscription;
 var nodes = [];
