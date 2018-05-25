@@ -1,7 +1,8 @@
 var web3 = new Web3(Web3.givenProvider || 'wss://mainnet.infura.io/_ws');
 
 var subscription;
-
+var nodes = [];
+var links = [];
 
 function start() {
     console.log("Starting...")
@@ -10,24 +11,9 @@ function start() {
     subscription = web3.eth.subscribe('pendingTransactions', function (error, result) {
     })
         .on("data", function (transactionHash) {
-            console.log(transactionHash);
             web3.eth.getTransaction(transactionHash)
                 .then(function (transaction) {
-                    console.log(transaction);
-                    var from = { id: transaction.from }
-                    var fromFound = nodes.some(function (el) {
-                        return el === from;
-                        console.log("Duplicate Found")
-                    })
-                    var to = { id: transaction.to }
-                    var toFound = nodes.some(function (el) {
-                        return el === to;
-                        console.log("Duplicate Found")
-                    })
-                    if (!fromFound) { nodes.push(from); }
-                    if (!toFound) { nodes.push(to); }
-                    links.push({ source: from, target: to });
-                    restart();
+                    createNode(transaction.from, transaction.to);
                 });
         })
     
@@ -44,16 +30,35 @@ function stop() {
 
 }
 
+var track = {}
 
+function createNode(from, to) {
 
+    if (!(from in track)) {
+        track[from] = nodes.length;
+        nodes.push({ id: from });
+    }
 
-var svg = d3.select("svg"),
-    width = +svg.attr("width"),
-    height = +svg.attr("height"),
-    color = d3.scaleOrdinal(d3.schemeCategory10);
+    if (!(to in track)) {
+        track[to] = nodes.length;
+        nodes.push({ id: to });
+    }
 
-var nodes = [],
-    links = [];
+    links.push({ source: nodes[track[from]], target: nodes[track[to]] });
+
+    restart();
+}
+
+//Crazy d3.js code. I don't claim to understand it...
+var width = 960;
+var height = 960;
+var color = d3.scaleOrdinal(d3.schemeCategory20);
+
+var svg = d3.select("#graph").append("svg")
+    .attr("id", "playgraph")
+    //better to keep the viewBox dimensions with variables
+    .attr("viewBox", "0 0 " + width + " " + height)
+    .attr("preserveAspectRatio", "xMidYMid meet");
 
 var simulation = d3.forceSimulation(nodes)
     .force("charge", d3.forceManyBody().strength(-10))
@@ -67,14 +72,19 @@ var g = svg.append("g").attr("transform", "translate(" + width / 2 + "," + heigh
     link = g.append("g").attr("stroke", "#000").attr("stroke-width", 1.5).selectAll(".link"),
     node = g.append("g").attr("stroke", "#fff").attr("stroke-width", 1.5).selectAll(".node");
 
-restart();
-
 function restart() {
 
     // Apply the general update pattern to the nodes.
     node = node.data(nodes, function (d) { return d.id; });
     node.exit().remove();
-    node = node.enter().append("circle").attr("fill", function (d) { return color(d.id); }).attr("r", 2).merge(node);
+    node = node.enter()
+        .append("circle")
+        .attr("r", 5)
+        .attr("fill", function (d) { return color(Math.random()); })
+        .on('click', function (d) {
+            document.getElementById("output").innerHTML = '<a href="https://etherscan.io/address/' + d.id + '" target="_blank">' + d.id + '</a>';
+        })
+        .merge(node);
 
     // Apply the general update pattern to the links.
     link = link.data(links, function (d) { return d.source.id + "-" + d.target.id; });
@@ -96,3 +106,4 @@ function ticked() {
         .attr("x2", function (d) { return d.target.x; })
         .attr("y2", function (d) { return d.target.y; });
 }
+
