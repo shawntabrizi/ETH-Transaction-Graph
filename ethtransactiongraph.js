@@ -1,4 +1,4 @@
-var web3 = new Web3('wss://mainnet.infura.io/_ws');
+var web3 = new Web3('wss://mainnet.infura.io/ws');
 
 var subscription;
 var nodes = [];
@@ -13,7 +13,9 @@ function start() {
         .on("data", function (transactionHash) {
             web3.eth.getTransaction(transactionHash)
                 .then(function (transaction) {
-                    createNode(transaction.from, transaction.to);
+                    if (transaction) {
+                        createNode(transaction.from, transaction.to);
+                    }
                 });
         })
     
