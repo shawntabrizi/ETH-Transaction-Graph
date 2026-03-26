@@ -1,46 +1,95 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Visualize pending Ethereum transactions as a force-directed graph.">
     <meta name="author" content="Shawn Tabrizi">
-    <link rel="icon" href="">
 
     <title>ETH Transaction Graph</title>
 
-    <!-- Bootstrap core CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+        }
+        .sidebar {
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        #graph svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        /* Desktop: sidebar left, graph right */
+        @media (min-width: 768px) {
+            .app {
+                display: flex;
+                height: 100vh;
+            }
+            .sidebar {
+                width: 300px;
+                flex-shrink: 0;
+                height: 100vh;
+                overflow-y: auto;
+            }
+            .graph-area {
+                flex: 1;
+                height: 100vh;
+            }
+        }
+        /* Mobile: stack vertically */
+        @media (max-width: 767px) {
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid #dee2e6;
+            }
+            .graph-area {
+                height: calc(100vh - 200px);
+            }
+        }
+        .footer {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        .footer a {
+            color: #6c757d;
+        }
+    </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="jumbotron mt-3">
-            <h1>ETH Transaction Graph</h1>
-            <p class="lead">Dynamically view the pending transactions on Ethereum using Web3.js.</p>
-            <div class="input">
-                <a class="btn btn-lg btn-success" onclick="start();" role="button">Start</a>
-                <a class="btn btn-lg btn-secondary" onclick="stop();" role="button">Stop</a>
+    <div class="app">
+        <div class="sidebar">
+            <div>
+                <h4>ETH Transaction Graph</h4>
+                <p class="text-muted">Visualize pending transactions on Ethereum in real time.</p>
+                <div class="d-flex gap-2 mb-3">
+                    <a class="btn btn-success" onclick="start();" role="button">Start</a>
+                    <a class="btn btn-secondary" onclick="stop();" role="button">Stop</a>
+                </div>
+                <hr />
+                <div id="output" class="small" style="word-break: break-all;">Press start, then click a node to see its address.</div>
             </div>
-            <hr />
-            <h4 id="output">Press start, then click on a node to see the address here!</h4>
+            <div class="footer mt-3">
+                Created by <a href="https://shawntabrizi.com">Shawn Tabrizi</a> &middot;
+                <a href="https://github.com/shawntabrizi/ETH-Transaction-Graph">GitHub</a> &middot;
+                <a href="https://d3js.org/">D3.js</a> &middot;
+                <a href="https://docs.ethers.org/">ethers.js</a>
+            </div>
         </div>
-        <div id="graph"></div>
-    </div>
-    <div class="fixed-bottom bg-light">
-        <p class="text-center text-muted">Created by <a href="http://shawntabrizi.com">Shawn Tabrizi</a> - Source on <a href="https://github.com/shawntabrizi/ETH-Transaction-Graph">GitHub</a> - <a href="https://shawntabrizi.com/ethereum/using-web3-js-1-0-subscribe-and-infura-websockets-to-visualize-ethereum-transactions/">Tutorial to create this</a> - Using <a href="https://infura.io/">Infura</a>, <a href="https://d3js.org/">D3.js</a>, and <a href="https://github.com/ethereum/web3.js/">Web3.js 1.0</a></p>
+        <div class="graph-area" id="graph"></div>
     </div>
 
-    <!-- Bootstrap core JavaScript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
-
-    <!-- Custom JavaScript -->
-    <script src="https://d3js.org/d3.v4.js"></script>
-    <script src="./web3.min.js"></script>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
     <script src="./ethtransactiongraph.js"></script>
 </body>
 </html>

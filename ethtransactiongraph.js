@@ -1,41 +1,38 @@
-var web3 = new Web3('wss://mainnet.infura.io/ws');
+// Public WebSocket RPC (no API key needed)
+const WSS_RPC = "wss://ethereum-rpc.publicnode.com";
 
-var subscription;
+var provider;
 var nodes = [];
 var links = [];
+var track = {};
 
 function start() {
-    console.log("Starting...")
-    var output = document.getElementById('output')
+    console.log("Starting...");
 
-    subscription = web3.eth.subscribe('pendingTransactions', function (error, result) {
-    })
-        .on("data", function (transactionHash) {
-            web3.eth.getTransaction(transactionHash)
-                .then(function (transaction) {
-                    if (transaction) {
-                        createNode(transaction.from, transaction.to);
-                    }
-                });
-        })
-    
+    provider = new ethers.WebSocketProvider(WSS_RPC);
+
+    provider.on("pending", async (txHash) => {
+        try {
+            const tx = await provider.getTransaction(txHash);
+            if (tx && tx.from && tx.to) {
+                createNode(tx.from, tx.to);
+            }
+        } catch (e) {
+            // Transaction may vanish before we can fetch it — ignore
+        }
+    });
 }
 
 function stop() {
-    console.log("Stopping...")
-    // unsubscribes the subscription
-    subscription.unsubscribe(function (error, success) {
-        if (success)
-            console.log('Successfully unsubscribed!');
-    });
-
-
+    console.log("Stopping...");
+    if (provider) {
+        provider.removeAllListeners("pending");
+        provider.destroy();
+        provider = null;
+    }
 }
 
-var track = {}
-
 function createNode(from, to) {
-
     if (!(from in track)) {
         track[from] = nodes.length;
         nodes.push({ id: from });
@@ -51,14 +48,13 @@ function createNode(from, to) {
     restart();
 }
 
-//Crazy d3.js code. I don't claim to understand it...
+// D3.js force-directed graph
 var width = 960;
 var height = 960;
 var color = d3.scaleOrdinal(d3.schemeCategory20);
 
 var svg = d3.select("#graph").append("svg")
     .attr("id", "playgraph")
-    //better to keep the viewBox dimensions with variables
     .attr("viewBox", "0 0 " + width + " " + height)
     .attr("preserveAspectRatio", "xMidYMid meet");
 
@@ -75,8 +71,6 @@ var g = svg.append("g").attr("transform", "translate(" + width / 2 + "," + heigh
     node = g.append("g").attr("stroke", "#fff").attr("stroke-width", 1.5).selectAll(".node");
 
 function restart() {
-
-    // Apply the general update pattern to the nodes.
     node = node.data(nodes, function (d) { return d.id; });
     node.exit().remove();
     node = node.enter()
@@ -88,12 +82,10 @@ function restart() {
         })
         .merge(node);
 
-    // Apply the general update pattern to the links.
     link = link.data(links, function (d) { return d.source.id + "-" + d.target.id; });
     link.exit().remove();
     link = link.enter().append("line").merge(link);
 
-    // Update and restart the simulation.
     simulation.nodes(nodes);
     simulation.force("link").links(links);
     simulation.alpha(1).restart();
@@ -108,4 +100,3 @@ function ticked() {
         .attr("x2", function (d) { return d.target.x; })
         .attr("y2", function (d) { return d.target.y; });
 }
-

@@ -1,29 +1,26 @@
 # ETH Transaction Graph
-Using Infura's WebSockets, Web3.js's Subscriptions, and D3.js's Force Directed Graphs to visualize Ethereum's pending transactions.
 
-Look how simple Web3.js makes it for us:
-```
-function start() {
-    console.log("Starting...")
-    var output = document.getElementById('output')
+Visualize Ethereum's pending transactions in real time as a force-directed graph. Each node is an address, each edge is a transaction.
 
-    subscription = web3.eth.subscribe('pendingTransactions', function (error, result) {
-    })
-        .on("data", function (transactionHash) {
-            web3.eth.getTransaction(transactionHash)
-                .then(function (transaction) {
-                    createNode(transaction.from, transaction.to);
-                });
-        })
-    
-}
-```
-## Check out other simple Web3.js samples
-https://github.com/shawntabrizi/ETH-Balance
+**Try it out: [shawntabrizi.com/ETH-Transaction-Graph](https://shawntabrizi.com/ETH-Transaction-Graph/)**
 
-https://github.com/shawntabrizi/ERC-20-Token-Balance
+![Screenshot](screenshot.png)
 
-https://github.com/shawntabrizi/ETH-Balance-Graph
+## How It Works
 
+1. Click **Start** to subscribe to pending transactions via WebSocket
+2. Watch the graph grow as new transactions appear
+3. Click any node to see its Etherscan link
+4. Click **Stop** to unsubscribe
 
-![Screenshot](https://i.imgur.com/YW0nsfj.png)
+Uses [ethers.js](https://docs.ethers.org/) WebSocket provider for real-time transaction data and [D3.js](https://d3js.org/) for force-directed graph visualization.
+
+## Related Projects
+
+- [ETH Balance](https://github.com/shawntabrizi/ethbalance) — Get the ETH balance of an address
+- [ERC-20 Token Balance](https://github.com/shawntabrizi/ERC20-Token-Balance) — Query ERC-20 token balances
+- [ETH Balance Graph](https://github.com/shawntabrizi/ethgraph) — Graph ETH balance history over time
+
+## License
+
+[MIT](LICENSE)
