@@ -48,6 +48,78 @@ function createNode(from, to) {
     restart();
 }
 
+var ERC20_ABI = [
+    "function name() view returns (string)",
+    "function symbol() view returns (string)",
+    "function decimals() view returns (uint8)",
+    "function totalSupply() view returns (uint256)"
+];
+
+var httpProvider = new ethers.JsonRpcProvider("https://ethereum-rpc.publicnode.com");
+
+async function showNodeInfo(address) {
+    var output = document.getElementById("output");
+
+    // Count local graph stats
+    var sent = links.filter(function (l) {
+        var src = l.source.id || l.source;
+        return src === address;
+    }).length;
+    var received = links.filter(function (l) {
+        var tgt = l.target.id || l.target;
+        return tgt === address;
+    }).length;
+
+    var txBadges =
+        '<span class="badge bg-primary">' + sent + ' sent</span> ' +
+        '<span class="badge bg-success">' + received + ' received</span>';
+
+    // Show local data immediately
+    output.innerHTML =
+        '<a href="https://etherscan.io/address/' + address + '" target="_blank">' + address + '</a>' +
+        '<div class="mt-2">' + txBadges + '</div>' +
+        '<div class="text-muted mt-1">Loading...</div>';
+
+    // Fetch on-chain data
+    try {
+        var [balance, code] = await Promise.all([
+            httpProvider.getBalance(address),
+            httpProvider.getCode(address)
+        ]);
+
+        var isContract = code !== '0x';
+        var balanceStr = parseFloat(ethers.formatEther(balance)).toFixed(4);
+
+        var html =
+            '<a href="https://etherscan.io/address/' + address + '" target="_blank">' + address + '</a>' +
+            (isContract ? ' <span class="badge bg-warning text-dark">Contract</span>' : ' <span class="badge bg-info">EOA</span>') +
+            '<div class="mt-2">' + balanceStr + ' ETH</div>' +
+            '<div class="mt-1">' + txBadges + '</div>';
+
+        // If it's a contract, try to read ERC-20 token info
+        if (isContract) {
+            try {
+                var token = new ethers.Contract(address, ERC20_ABI, httpProvider);
+                var [name, symbol, decimals, totalSupply] = await Promise.all([
+                    token.name(),
+                    token.symbol(),
+                    token.decimals(),
+                    token.totalSupply()
+                ]);
+                var supplyStr = parseFloat(ethers.formatUnits(totalSupply, decimals)).toLocaleString();
+                html += '<div class="mt-2"><strong>' + name + '</strong> (' + symbol + ')</div>';
+                html += '<div class="text-muted">Supply: ' + supplyStr + ' ' + symbol + '</div>';
+            } catch (e) {
+                // Not an ERC-20 token — skip
+            }
+        }
+
+        output.innerHTML = html;
+    } catch (e) {
+        // Keep the local data if RPC fails
+    }
+}
+
 // D3.js force-directed graph
 var width = 960;
 var height = 960;
@@ -77,9 +149,7 @@ function restart() {
         .append("circle")
         .attr("r", 5)
         .attr("fill", function (d) { return color(Math.random()); })
-        .on('click', function (d) {
-            document.getElementById("output").innerHTML = '<a href="https://etherscan.io/address/' + d.id + '" target="_blank">' + d.id + '</a>';
-        })
+        .on('click', function (d) { showNodeInfo(d.id); })
         .merge(node);
 
     link = link.data(links, function (d) { return d.source.id + "-" + d.target.id; });
